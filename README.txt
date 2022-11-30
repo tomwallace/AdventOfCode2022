@@ -5,3 +5,5 @@ http://adventofcode.com/2022/about
 You can find more code from me on my Github page:
 
 https://github.com/tomwallace
+
+I also have a project for an F# implementation of the puzzles, which is included for puzzles I have time to convert, as I am exploring that language.
