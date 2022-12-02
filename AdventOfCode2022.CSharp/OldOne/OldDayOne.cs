@@ -13,7 +13,7 @@ public class OldDayOne : IAdventProblemSet
     /// <inheritdoc />
     public int SortOrder()
     {
-        return 1;
+        return 99;
     }
 
     /// <inheritdoc />
