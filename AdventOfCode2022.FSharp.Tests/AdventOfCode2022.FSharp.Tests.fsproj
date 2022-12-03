@@ -8,7 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Modules\Day01Tests.fs" />
+    <Compile Include="Modules\Day02Tests.fs" />
     <Compile Include="Modules\Day99Tests.fs" />
+    <Content Include="Inputs\Input01A.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Inputs\Input02A.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Inputs\Input99A.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

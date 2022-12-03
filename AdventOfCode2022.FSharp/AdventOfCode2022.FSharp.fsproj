@@ -8,8 +8,18 @@
   <ItemGroup>
 	  
 	  <Compile Include="CommonModules\Common.fs" />
+	  
+	  <Compile Include="Modules\Day01.fs" />
+	  
+	  <Compile Include="Modules\Day02.fs" />
 	  <Compile Include="Modules\Day99.fs" />
 	  <Compile Include="Program.fs" />
+	  <Content Include="Inputs\Input01.txt">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="Inputs\Input02.txt">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
 	  <Content Include="Inputs\Input99.txt">
 		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </Content>

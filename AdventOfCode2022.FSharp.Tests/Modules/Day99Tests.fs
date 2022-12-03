@@ -4,7 +4,7 @@ open System.IO
 open Xunit
 open AdventOfCode2022.FSharp.Day99
 
-module Day01Tests =
+module Day99Tests =
 
     let testInput =
         (File.ReadAllLines(@"Inputs\Input99A.txt"))
