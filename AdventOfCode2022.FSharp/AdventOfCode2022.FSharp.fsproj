@@ -9,11 +9,16 @@
 	  
 	  <Compile Include="CommonModules\Common.fs" />
 	  
+	  <Compile Include="Modules\Day03.fs" />
+	  
 	  <Compile Include="Modules\Day01.fs" />
 	  
 	  <Compile Include="Modules\Day02.fs" />
 	  <Compile Include="Modules\Day99.fs" />
 	  <Compile Include="Program.fs" />
+	  <None Include="Inputs\Input03.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
 	  <Content Include="Inputs\Input01.txt">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </Content>
@@ -26,5 +31,7 @@
 
 	  
   </ItemGroup>
+
+  <ItemGroup />
 
 </Project>
