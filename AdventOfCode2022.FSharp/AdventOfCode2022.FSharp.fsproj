@@ -9,6 +9,8 @@
 	  
 	  <Compile Include="CommonModules\Common.fs" />
 	  
+	  <Compile Include="Modules\Day05.fs" />
+	  
 	  <Compile Include="Modules\Day04.fs" />
 	  
 	  <Compile Include="Modules\Day03.fs" />
@@ -18,6 +20,9 @@
 	  <Compile Include="Modules\Day02.fs" />
 	  <Compile Include="Modules\Day99.fs" />
 	  <Compile Include="Program.fs" />
+	  <None Include="Inputs\Input05.txt">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	  <None Include="Inputs\Input04.txt">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
