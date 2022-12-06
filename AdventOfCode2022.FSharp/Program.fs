@@ -8,6 +8,7 @@ Day02.Execute
 Day03.Execute
 Day04.Execute
 Day05.Execute
+Day06.Execute
 Day99.Execute
 |]
 |> Array.iter id
