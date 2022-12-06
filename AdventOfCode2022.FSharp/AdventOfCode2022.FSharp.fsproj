@@ -9,6 +9,8 @@
 	  
 	  <Compile Include="CommonModules\Common.fs" />
 	  
+	  <Compile Include="Modules\Day06.fs" />
+	  
 	  <Compile Include="Modules\Day05.fs" />
 	  
 	  <Compile Include="Modules\Day04.fs" />
