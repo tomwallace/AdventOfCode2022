@@ -4,9 +4,9 @@ open System.IO
 
 module Types =
     let ExecuteOutput day title puzzle1 puzzle2 =
-        let titlePad = title |> string |> fun c -> c.PadRight(20, ' ')
-        let puzzle1Pad = puzzle1 |> string |> fun c -> c.PadLeft(15, ' ')
-        let puzzle2Pad = puzzle2 |> string |> fun c -> c.PadLeft(15, ' ')
+        let titlePad = title |> string |> fun c -> c.PadRight(30, ' ')
+        let puzzle1Pad = puzzle1 |> string |> fun c -> c.PadLeft(20, ' ')
+        let puzzle2Pad = puzzle2 |> string |> fun c -> c.PadLeft(20, ' ')
         printfn $"Day {day} - {titlePad} | 1: {puzzle1Pad} | 2: {puzzle2Pad}"
 
     // TODO: Remove
