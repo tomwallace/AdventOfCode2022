@@ -9,7 +9,7 @@ public class DayThreeTests
     public void GetPriorityScoreSum()
     {
         string filePath = @"Three\DayThreeTestInputA.txt";
-        var rucksacks = FileUtility.ParseFileToList(filePath, line => line);
+        var rucksacks = FileUtility.ParseFileToList(filePath);
         var sut = new DayThree();
         var result = sut.GetPriorityScoreSum(rucksacks, false);
 
@@ -20,7 +20,7 @@ public class DayThreeTests
     public void GetPriorityScoreSum_Groups()
     {
         string filePath = @"Three\DayThreeTestInputA.txt";
-        var rucksacks = FileUtility.ParseFileToList(filePath, line => line);
+        var rucksacks = FileUtility.ParseFileToList(filePath);
         var sut = new DayThree();
         var result = sut.GetPriorityScoreSum(rucksacks, true);
 

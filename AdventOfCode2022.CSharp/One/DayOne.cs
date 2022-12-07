@@ -20,7 +20,7 @@ public class DayOne : IAdventProblemSet
     public string PartA()
     {
         string filePath = @"One\DayOneInput.txt";
-        List<string> data = FileUtility.ParseFileToList(filePath, line => line);
+        List<string> data = FileUtility.ParseFileToList(filePath);
         var elves = CalculateCalorieTotals(data);
 
         return elves.Max().ToString();
@@ -30,7 +30,7 @@ public class DayOne : IAdventProblemSet
     public string PartB()
     {
         string filePath = @"One\DayOneInput.txt";
-        List<string> data = FileUtility.ParseFileToList(filePath, line => line);
+        List<string> data = FileUtility.ParseFileToList(filePath);
         var total = TotalCaloriesTopThreeElves(data);
 
         return total.ToString();

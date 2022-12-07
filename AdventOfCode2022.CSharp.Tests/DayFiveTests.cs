@@ -24,7 +24,7 @@ public class DayFiveTests
     {
         string filePath = @"Five\DayFiveTestInputA.txt";
         var sut = new DayFive();
-        var directions = FileUtility.ParseFileToList(filePath, line => line);
+        var directions = FileUtility.ParseFileToList(filePath);
         var result = sut.MoveAndGetTopCrates(directions, testStacks, true);
 
         Assert.Equal("CMZ", result);

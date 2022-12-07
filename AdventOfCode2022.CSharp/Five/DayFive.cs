@@ -46,7 +46,7 @@ public class DayFive : IAdventProblemSet
     public string PartA()
     {
         string filePath = @"Five\DayFiveInput.txt";
-        var directions = FileUtility.ParseFileToList(filePath, line => line);
+        var directions = FileUtility.ParseFileToList(filePath);
         var result = MoveAndGetTopCrates(directions, stackInput, true);
 
         return result;
@@ -56,7 +56,7 @@ public class DayFive : IAdventProblemSet
     public string PartB()
     {
         string filePath = @"Five\DayFiveInput.txt";
-        var directions = FileUtility.ParseFileToList(filePath, line => line);
+        var directions = FileUtility.ParseFileToList(filePath);
         var result = MoveAndGetTopCrates(directions, stackInput, false);
 
         return result;

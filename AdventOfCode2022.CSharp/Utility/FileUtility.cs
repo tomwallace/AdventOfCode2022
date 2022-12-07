@@ -24,4 +24,24 @@ public static class FileUtility
         file.Close();
         return splits;
     }
+
+    /// <summary>
+    /// Overload that assumes the types returned will be strings, given no parser was provided
+    /// </summary>
+    /// <param name="filePath">The path of the file, relative to the root of the main project</param>
+    /// <returns>A List of string of each line of the file</returns>
+    public static List<string> ParseFileToList(string filePath)
+    {
+        List<string> splits = new List<string>();
+        string line;
+        StreamReader file = new StreamReader(filePath);
+
+        // Iterate over each line in the input
+        while ((line = file.ReadLine()!) != null)
+        {
+            splits.Add(line);
+        }
+        file.Close();
+        return splits;
+    }
 }

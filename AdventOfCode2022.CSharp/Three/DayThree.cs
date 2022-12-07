@@ -20,7 +20,7 @@ public class DayThree : IAdventProblemSet
     public string PartA()
     {
         string filePath = @"Three\DayThreeInput.txt";
-        var rucksacks = FileUtility.ParseFileToList(filePath, line => line);
+        var rucksacks = FileUtility.ParseFileToList(filePath);
         var sum = GetPriorityScoreSum(rucksacks, false);
 
         return sum.ToString();
@@ -30,7 +30,7 @@ public class DayThree : IAdventProblemSet
     public string PartB()
     {
         string filePath = @"Three\DayThreeInput.txt";
-        var rucksacks = FileUtility.ParseFileToList(filePath, line => line);
+        var rucksacks = FileUtility.ParseFileToList(filePath);
         var sum = GetPriorityScoreSum(rucksacks, true);
 
         return sum.ToString();

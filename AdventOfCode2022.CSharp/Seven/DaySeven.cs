@@ -37,7 +37,7 @@ public class DaySeven : IAdventProblemSet
     // TODO Provide overload for FileUtility where if just path is passed, assumes to return list string
     public long CreateDirectoryStructureAndEvaluate(string filePath, long maxSize)
     {
-        var instructions = FileUtility.ParseFileToList(filePath, line => line);
+        var instructions = FileUtility.ParseFileToList(filePath);
         var root = ProcessInstructions(instructions);
         var sum = SumDirectoriesOverSize(root, maxSize);
         return sum;
@@ -46,7 +46,7 @@ public class DaySeven : IAdventProblemSet
     public long CreateDirectoryStructureAndFindDelete(string filePath)
     {
         var updateSize = 30000000;
-        var instructions = FileUtility.ParseFileToList(filePath, line => line);
+        var instructions = FileUtility.ParseFileToList(filePath);
         var root = ProcessInstructions(instructions);
         var target = updateSize - (70000000 - root.DirectorySize());
         var smallestSuccess = SmallestDirectoryToSucceed(root, target);

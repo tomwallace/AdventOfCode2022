@@ -37,7 +37,7 @@ public class DayFour : IAdventProblemSet
     public int CountOverlapSections(string filePath, bool atAll)
     {
         var countOverlapped = 0;
-        var lines = FileUtility.ParseFileToList(filePath, line => line);
+        var lines = FileUtility.ParseFileToList(filePath);
         foreach (var line in lines)
         {
             var split = line.Split(',');

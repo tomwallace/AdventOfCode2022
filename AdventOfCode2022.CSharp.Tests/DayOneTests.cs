@@ -9,7 +9,7 @@ public class DayOneTests
     public void CalculateCalorieTotals()
     {
         string filePath = @"One\DayOneTestInputA.txt";
-        List<string> data = FileUtility.ParseFileToList(filePath, line => line);
+        List<string> data = FileUtility.ParseFileToList(filePath);
 
         var sut = new DayOne();
         var result = sut.CalculateCalorieTotals(data);
@@ -23,7 +23,7 @@ public class DayOneTests
     public void TotalCaloriesTopThreeElves()
     {
         string filePath = @"One\DayOneTestInputA.txt";
-        List<string> data = FileUtility.ParseFileToList(filePath, line => line);
+        List<string> data = FileUtility.ParseFileToList(filePath);
 
         var sut = new DayOne();
         var result = sut.TotalCaloriesTopThreeElves(data);
