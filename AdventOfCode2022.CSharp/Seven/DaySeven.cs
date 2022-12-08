@@ -34,7 +34,6 @@ public class DaySeven : IAdventProblemSet
         return smallest.ToString();
     }
 
-    // TODO Provide overload for FileUtility where if just path is passed, assumes to return list string
     public long CreateDirectoryStructureAndEvaluate(string filePath, long maxSize)
     {
         var instructions = FileUtility.ParseFileToList(filePath);
