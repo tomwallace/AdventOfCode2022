@@ -5,7 +5,7 @@ public class DayFourteen : IAdventProblemSet
     /// <inheritdoc />
     public string Description()
     {
-        return "Distress Signal";
+        return "Regolith Reservoir";
     }
 
     /// <inheritdoc />
