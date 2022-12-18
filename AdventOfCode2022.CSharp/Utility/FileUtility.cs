@@ -13,11 +13,10 @@ public static class FileUtility
     public static List<T> ParseFileToList<T>(string filePath, Func<string, T> parser)
     {
         List<T> splits = new List<T>();
-        string line;
         StreamReader file = new StreamReader(filePath);
 
         // Iterate over each line in the input
-        while ((line = file.ReadLine()!) != null)
+        while (file.ReadLine()! is { } line)
         {
             splits.Add(parser(line));
         }
@@ -33,15 +32,38 @@ public static class FileUtility
     public static List<string> ParseFileToList(string filePath)
     {
         List<string> splits = new List<string>();
-        string line;
         StreamReader file = new StreamReader(filePath);
 
         // Iterate over each line in the input
-        while ((line = file.ReadLine()!) != null)
+        while (file.ReadLine()! is { } line)
         {
             splits.Add(line);
         }
         file.Close();
         return splits;
+    }
+
+    /// <summary>
+    /// Splits a file into lines by carriage return, then creates a dictionary based on the defined
+    /// parser function, with Item1 creating the index and Item2 creating the value.
+    /// Returns the dictionary.
+    /// </summary>
+    /// <typeparam name="I">Type for the dictionary index</typeparam>
+    /// <typeparam name="T">Type for the dictionary value</typeparam>
+    /// <param name="filePath">The path of the file, relative to the root of the main project</param>
+    /// <param name="parser">The parser functions used to create the dictionary</param>
+    /// <returns>A Dictionary of type I,T from each line of the file</returns>
+    public static Dictionary<I, T> ParseFileToDictionary<I, T>(string filePath, (Func<string, I>, Func<string, T>) parser) where I : notnull
+    {
+        Dictionary<I, T> results = new Dictionary<I, T>();
+        StreamReader file = new StreamReader(filePath);
+
+        // Iterate over each line in the input
+        while (file.ReadLine()! is { } line)
+        {
+            results.Add(parser.Item1(line), parser.Item2(line));
+        }
+        file.Close();
+        return results;
     }
 }
