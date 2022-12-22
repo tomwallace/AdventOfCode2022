@@ -41,9 +41,12 @@ public class DayTwentyOne : IAdventProblemSet
     // to derive the answer.  That is what I did.
     public string GetReducedEquation(string filePath)
     {
-        var monkeyPairs = FileUtility.ParseFileToList(filePath, line => new MonkeyPair(line));
-        // TODO: Modify FileUtility to have another Parse to dictionary that takes in a line then derives the key and value from it
-        var monkeys = monkeyPairs.ToDictionary(m => m.Name, m => m);
+        var monkeys = FileUtility.ParseFileToDictionary(filePath, line =>
+        {
+            var mp = new MonkeyPair(line);
+            return (mp.Name, mp);
+        });
+
         var leftSide = monkeys["root"].InputKeys.Item1;
         var rightSide = monkeys["root"].InputKeys.Item2;
         var leftVal = monkeys[leftSide].GetExpression(monkeys);

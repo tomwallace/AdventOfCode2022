@@ -74,10 +74,12 @@ public class DayTwenty : IAdventProblemSet
     public void Mix(LinkedList<MixNode> input)
     {
         var n = input.Count - 1;
-        for (var i = 0; i < input.Count; i++) {
-            var current = Nodes(input).First(node => node.Value.ShiftOrder == i);
+        for (var i = 0; i < input.Count; i++)
+        {
+            var current = GetNodes(input).First(node => node.Value.ShiftOrder == i);
             var shift = ((current.Value.Shift % n) + n) % n;
-            if (shift == 0) {
+            if (shift == 0)
+            {
                 continue;
             }
             var pointer = current;
@@ -88,19 +90,19 @@ public class DayTwenty : IAdventProblemSet
         }
     }
 
-    public static IEnumerable<LinkedListNode<T>> Nodes<T>(LinkedList<T> list) {
-        for (var i = list.First; i is not null; i = i.Next)
-            yield return i;
-    }
-
-    /* TODO: Refactor above
     public List<LinkedListNode<MixNode>> GetNodes(LinkedList<MixNode> list)
     {
         var collected = new List<LinkedListNode<MixNode>>();
+        for (var i = list.First; i != null; i = i.Next)
+        {
+            collected.Add(i);
+        }
 
-    } 
-    */
-    public record struct MixNode(long Shift, int ShiftOrder) {
+        return collected;
+    }
+
+    public record struct MixNode(long Shift, int ShiftOrder)
+    {
         public override string ToString() => $"{Shift}";
     }
 

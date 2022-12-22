@@ -4,12 +4,13 @@ namespace AdventOfCode2022.CSharp.Tests;
 
 public class DayNineteenTests
 {
+    // TODO: Return here and evaluate - pruning too much now
     [Fact]
-    public void SumQualityLevel()
+    public void SumQualityLevelPriorityQueue()
     {
         string filePath = @"Nineteen\DayNineteenTestInputA.txt";
         var sut = new DayNineteen();
-        var result = sut.SumQualityLevel(filePath);
+        var result = sut.SumQualityLevelPriorityQueue(filePath, 24);
 
         Assert.Equal(33, result);
     }

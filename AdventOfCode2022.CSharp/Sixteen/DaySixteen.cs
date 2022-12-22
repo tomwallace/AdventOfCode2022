@@ -87,7 +87,7 @@ public class DaySixteen : IAdventProblemSet
             if (newTimeToGo > 0)
             {
                 var newTimes = new[] { newTimeToGo, timeToGo[1 - actorIndex] };
-                var newNames = new [] { t.name, startingValveKey[1 - actorIndex] };
+                var newNames = new[] { t.name, startingValveKey[1 - actorIndex] };
 
                 // Get the best by recursively stepping down the paths
                 long gain = newTimeToGo * t.rate + GetReleasePressureWithHelp(newTimes, usedValveKeyRates.Where(c => c.name != t.name).ToArray(), newNames, valves);
@@ -100,8 +100,11 @@ public class DaySixteen : IAdventProblemSet
 
     private Dictionary<string, Valve> SetUpValves(string filePath)
     {
-        var valves = FileUtility.ParseFileToList(filePath, line => new Valve(line))
-            .ToDictionary(v => v.Name, v => v);
+        var valves = FileUtility.ParseFileToDictionary(filePath, line =>
+        {
+            var valve = new Valve(line);
+            return (valve.Name, valve);
+        });
 
         // Connect them
         foreach (var key in valves.Keys)

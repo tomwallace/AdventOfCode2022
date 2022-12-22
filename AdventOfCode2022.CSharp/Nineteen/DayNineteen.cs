@@ -35,6 +35,113 @@ public class DayNineteen : IAdventProblemSet
         return "";
     }
 
+    public int SumQualityLevelPriorityQueue(string filePath, int maxTime)
+    {
+        var blueprints = FileUtility.ParseFileToList(filePath, line => new Blueprint(line));
+        var qualityLevels = blueprints.Select(b => EvaluateBlueprintPriorityQueue(b, maxTime));
+        return qualityLevels.Sum();
+    }
+
+    private int EvaluateBlueprintPriorityQueue(Blueprint blueprint, int maxTime)
+    {
+        //var maxTime = 24;
+        //var blueprints = FileUtility.ParseFileToList(filePath, line => new Blueprint(line));
+        var seen = new HashSet<string>();
+        var maxGeodes = 0;
+
+        var queue = new PriorityQueue<RobotState, int>();
+
+        var startState = new RobotState(maxTime,
+            new Dictionary<string, int>()
+            {
+                {"Ore", 0},
+                {"Clay", 0},
+                {"Obsidian", 0},
+                {"Geode", 0},
+            },
+            new Dictionary<string, int>()
+            {
+                {"Ore", 1},
+                {"Clay", 0},
+                {"Obsidian", 0},
+                {"Geode", 0},
+            },
+            new Dictionary<string, bool>()
+            {
+                { "Ore", false },
+                { "Clay", false },
+                { "Obsidian", false },
+                { "Geode", false }
+            });
+
+        queue.Enqueue(startState, GetPotentialGeodeCount(startState));
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+
+            // TODO: Sample has break?
+            if (GetPotentialGeodeCount(current) < maxGeodes)
+                continue;
+
+            if (seen.Contains(current.ToString()))
+                continue;
+
+            seen.Add(current.ToString());
+
+            // Out of time, so consider maxGeodes
+            if (current.Time == 0)
+            {
+                maxGeodes = maxGeodes < current.Resources["Geode"] ? current.Resources["Geode"] : maxGeodes;
+                continue;
+            }
+                
+            var buildableRobots = blueprint.CanMake(current.Resources);
+
+            // First - consider current state, in case we can build more robots next turn
+            var currentClone = current.Clone();
+            currentClone.Time--;
+            currentClone.BuildableRobots = buildableRobots.ToList();
+            currentClone.Collect();
+
+            queue.Enqueue(currentClone, GetPotentialGeodeCount(currentClone));
+
+            // Second - consider what robots we can make, skipping any we just built the previous round
+            foreach (var robotName in buildableRobots)
+            {
+                if (/*!current.BuildableRobots.Contains(robotName) && */WorthBuildingRobot(robotName, current, blueprint))
+                {
+                    var child = current.Clone();
+                    child.Time--;
+                    child.Collect();
+                    blueprint.Make(robotName, child.Resources);
+                    child.Robots[robotName]++;
+
+                    queue.Enqueue(child, GetPotentialGeodeCount(child));
+                }
+            }
+        }
+
+        return maxGeodes;
+    }
+
+    private int GetPotentialGeodeCount(RobotState state)
+    {
+        // What is the max number of geodes that the state can produce, assuming that in every step a new geode robot
+        // can be built.  This is not true, but gives us a potential priority to assign
+        var currentBuilding = state.Robots["Geode"];
+        var futurePotential = (currentBuilding + currentBuilding + state.Time) * state.Time / 2;
+        var currentHoldings = state.Resources["Geode"];
+        return currentHoldings + futurePotential;
+    }
+
+    // Check to see if we need any more of that resource - i.e. are we already producing the max amount we could spend
+    // of that resource, given we can only make one robot a turn
+    private bool WorthBuildingRobot(string robotName, RobotState state, Blueprint blueprint)
+    {
+        return (state.Robots[robotName] + 1) < blueprint.MaxNeeded[robotName];
+    }
+
     public int SumQualityLevel(string filePath)
     {
         var maxTime = 24;
@@ -216,7 +323,10 @@ public class RobotState
         Time = time;
         Resources = resources;
         Robots = robots;
+        // TODO: may be able to removed
         CouldBuildLastRound = couldBuildLastRound;
+
+        BuildableRobots = new List<string>();
     }
     
     public Dictionary<string, int> Resources { get; set; }
@@ -224,6 +334,8 @@ public class RobotState
     public Dictionary<string, int> Robots { get; set; }
 
     public Dictionary<string, bool> CouldBuildLastRound {get; set; }
+
+    public List<string> BuildableRobots { get; set; }
 
     public int Time { get; set; }
 
@@ -237,7 +349,7 @@ public class RobotState
             { "Obsidian", false },
             { "Geode", false }
         };
-        return new RobotState(Time, new Dictionary<string, int>(Resources), new Dictionary<string, int>(Robots), couldBuildPrevious);
+        return new RobotState(Time, new Dictionary<string, int>(Resources.ToList()), new Dictionary<string, int>(Robots.ToList()), couldBuildPrevious);
     }
 
     public void Collect()
@@ -251,8 +363,8 @@ public class RobotState
     public override string ToString()
     {
         // Used to see if we have gotten this state before, so exclude time
-        var res = string.Join(",", Resources.OrderBy(i => i.Value).Select(i => i.Value));
-        var rob = string.Join(",", Robots.OrderBy(i => i.Value).Select(i => i.Value));
+        var res = string.Join(",", Resources.OrderBy(i => i.Key).Select(i => i.Value));
+        var rob = string.Join(",", Robots.OrderBy(i => i.Key).Select(i => i.Value));
         return $"{Time}|{res}|{rob}";
     }
 }
@@ -313,6 +425,18 @@ public class Blueprint
     public Dictionary<string, Dictionary<string, int>> Costs { get; }
 
     public Dictionary<string, int> MaxNeeded { get; }
+
+    public List<string> CanMake(Dictionary<string, int> resources)
+    {
+        var makeable = new List<string>();
+        foreach (var robotName in new[] { "Obsidian", "Clay", "Ore" })
+        {
+            if (CanMake(robotName, resources))
+                makeable.Add(robotName);
+        }
+
+        return makeable;
+    }
 
     public bool CanMake(string robotName, Dictionary<string, int> resources)
     {
