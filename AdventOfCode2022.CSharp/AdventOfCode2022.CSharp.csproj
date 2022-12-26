@@ -125,6 +125,12 @@
 	  <None Update="Twelve\DayTwelveTestInputA.txt">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
+	  <None Update="TwentyFive\DayTwentyFiveInput.txt">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="TwentyFive\DayTwentyFiveTestInputA.txt">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	  <None Update="TwentyOne\DayTwentyOneInput.txt">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>

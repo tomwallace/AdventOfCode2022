@@ -1,5 +1,4 @@
-﻿using AdventOfCode2022.CSharp.TwentyOne;
-using AdventOfCode2022.CSharp.TwentyTwo;
+﻿using AdventOfCode2022.CSharp.TwentyTwo;
 
 namespace AdventOfCode2022.CSharp.Tests;
 
@@ -17,7 +16,7 @@ public class DayTwentyTwoTests
         Assert.Equal(12, sut.RowMask[1].Item2);
         Assert.Equal(5, sut.ColMask[1].Item1);
         Assert.Equal(8, sut.ColMask[1].Item2);
-        Assert.Equal(13, sut.Walls.Count);
+        Assert.Equal(13, sut.Coords.Count(c => c.Value == false));
         Assert.NotNull(sut.Instructions);
         Assert.Equal(13, sut.Instructions.Count);
     }
@@ -32,14 +31,13 @@ public class DayTwentyTwoTests
         Assert.Equal(6032, result);
     }
 
-    // Too high - 115396
     [Fact]
     public void PartA_Actual()
     {
         var sut = new DayTwentyTwo();
         var result = sut.PartA();
 
-        Assert.Equal("-1", result);
+        Assert.Equal("27436", result);
     }
 
     [Fact]

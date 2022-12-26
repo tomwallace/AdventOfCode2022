@@ -1,6 +1,7 @@
-﻿using System.Diagnostics;
+﻿using AdventOfCode2022.CSharp.Utility;
+using System.Diagnostics;
 using System.Text;
-using AdventOfCode2022.CSharp.Utility;
+using System.Text.RegularExpressions;
 
 namespace AdventOfCode2022.CSharp.TwentyTwo;
 
@@ -18,7 +19,6 @@ public class DayTwentyTwo : IAdventProblemSet
         return 22;
     }
 
-    // TODO: Come back to because works for sample, but not for Part A
     /// <inheritdoc />
     public string PartA()
     {
@@ -28,6 +28,7 @@ public class DayTwentyTwo : IAdventProblemSet
         return password.ToString();
     }
 
+    // TODO: Part B
     /// <inheritdoc />
     public string PartB()
     {
@@ -56,14 +57,14 @@ public class Map
     {
         RowMask = new Dictionary<int, (int, int)>();
         ColMask = new Dictionary<int, (int, int)>();
-        Walls = new Dictionary<string, char>();
-        
+        Coords = new Dictionary<string, bool>();
+
         var lines = FileUtility.ParseFileToList(filePath);
 
         var reference = new List<List<char>>();
 
         // NOTE - the input does not pad the right side, so we have to do that
-        var maxWidth = lines.Max(l => l.Length);
+        var maxWidth = lines.Take(lines.Count - 2).Max(l => l.Length);
 
         for (int y = 0; y < (lines.Count - 2); y++)
         {
@@ -76,8 +77,8 @@ public class Map
 
                 lineList.Add(c);
 
-                if (c == '#')
-                    Walls.Add(Point.CoordsToString(x + 1, y + 1), '#');
+                if (c == '#' || c == '.')
+                    Coords.Add(Point.CoordsToString(x + 1, y + 1), c == '.');
             }
 
             var firstCharIndex = lineChar.FindIndex(c => c != ' ');
@@ -91,7 +92,7 @@ public class Map
         for (int x = 0; x < reference[0].Count; x++)
         {
             var col = reference.Select(c => c[x]).ToList();
-            
+
             var firstCharIndex = col.FindIndex(c => c != ' ');
             var lastCharIndex = col.FindLastIndex(c => c != ' ');
             ColMask.Add(x + 1, (firstCharIndex + 1, lastCharIndex + 1));
@@ -101,35 +102,25 @@ public class Map
         Reference = reference;
 
         // Handle instructions
-        var ins = lines[^1].ToCharArray();
+        var ins2 = lines[^1];
         var insList = new List<string>();
-
-        var numberCollector = "";
-        for (int i = 0; i < ins.Length; i++)
+        var matches = Regex.Matches(ins2, @"(\d+)([RL]?)");
+        foreach (Match match in matches)
         {
-            if (ins[i] == 'L' || ins[i] == 'R')
-            {
-                insList.Add(numberCollector);
-                insList.Add(ins[i].ToString());
-                numberCollector = "";
-            }
-            else
-            {
-                numberCollector = $"{numberCollector}{ins[i]}";
-            }
+            insList.Add(match.Groups[1].Value);
+            if (!string.IsNullOrEmpty(match.Groups[2].Value))
+                insList.Add(match.Groups[2].Value);
         }
-
-        if (!string.IsNullOrEmpty(numberCollector))
-            insList.Add(numberCollector);
 
         Instructions = insList;
     }
-    
+
     public Dictionary<int, (int, int)> RowMask { get; set; }
 
     public Dictionary<int, (int, int)> ColMask { get; set; }
 
-    public Dictionary<string, char> Walls { get; set; }
+    // True indicates if it is able to be traveled
+    public Dictionary<string, bool> Coords { get; set; }
 
     public Point Current { get; set; }
 
@@ -148,14 +139,13 @@ public class Map
             var steps = int.Parse(ins);
             for (int i = 0; i < steps; i++)
             {
-                (int x, int y) = Current.Move();
-                // Would hit wall
-                if (Walls.ContainsKey(Point.CoordsToString(x, y)))
-                    return;
+                (int x, int y) = Current.Move(RowMask, ColMask);
 
-                // Otherwise move
-                Current.X = WrapX(x, Current.Y);
-                Current.Y = WrapY(Current.X, y);
+                if (Coords[Point.CoordsToString(x, y)])
+                {
+                    Current.X = x;
+                    Current.Y = y;
+                }
             }
         }
     }
@@ -175,32 +165,12 @@ public class Map
                 {
                     builder.Append(Reference[y][x]);
                 }
-            }    
+            }
 
             Debug.WriteLine(builder.ToString());
         }
         Debug.WriteLine("");
         Debug.WriteLine("");
-    }
-
-    private int WrapX(int x, int y)
-    {
-        if (x > RowMask[y].Item2)
-            return RowMask[y].Item1;
-        if (x < RowMask[y].Item1)
-            return RowMask[y].Item2;
-
-        return x;
-    }
-
-    private int WrapY(int x, int y)
-    {
-        if (y > ColMask[x].Item2)
-            return ColMask[x].Item1;
-        if (y < ColMask[x].Item1)
-            return ColMask[x].Item2;
-
-        return y;
     }
 }
 
@@ -226,12 +196,16 @@ public class Point
         {
             case 3:
                 return "^";
+
             case 0:
                 return ">";
+
             case 1:
                 return "v";
+
             case 2:
                 return "<";
+
             default:
                 throw new ArgumentException($"Do not recongnize Dir {Dir}");
         }
@@ -256,28 +230,35 @@ public class Point
                 if (Dir > 3)
                     Dir = 0;
                 break;
+
             case "L":
                 Dir--;
                 if (Dir < 0)
                     Dir = 3;
                 break;
+
             default:
                 throw new ArgumentException($"Do not recognize rotate command {ins}");
         }
     }
 
-    public (int, int) Move()
+    // 0 = right, 1 = down, 2 = left, 3 = up
+    public (int, int) Move(Dictionary<int, (int, int)> rowMask, Dictionary<int, (int, int)> colMask)
     {
         switch (Dir)
         {
             case 3:
-                return (X, Y - 1);
+                return (X, WrapY(X, Y - 1, colMask));
+
             case 0:
-                return (X + 1, Y);
+                return (WrapX(X + 1, Y, rowMask), Y);
+
             case 1:
-                return (X, Y + 1);
+                return (X, WrapY(X, Y + 1, colMask));
+
             case 2:
-                return (X - 1, Y);
+                return (WrapX(X - 1, Y, rowMask), Y);
+
             default:
                 throw new ArgumentException($"Do not recongnize Dir {Dir}");
         }
@@ -286,5 +267,25 @@ public class Point
     public int GetPassword()
     {
         return (1000 * Y) + (4 * X) + Dir;
+    }
+
+    private int WrapX(int x, int y, Dictionary<int, (int, int)> rowMask)
+    {
+        if (x > rowMask[y].Item2)
+            return rowMask[y].Item1;
+        if (x < rowMask[y].Item1)
+            return rowMask[y].Item2;
+
+        return x;
+    }
+
+    private int WrapY(int x, int y, Dictionary<int, (int, int)> colMask)
+    {
+        if (y > colMask[x].Item2)
+            return colMask[x].Item1;
+        if (y < colMask[x].Item1)
+            return colMask[x].Item2;
+
+        return y;
     }
 }
