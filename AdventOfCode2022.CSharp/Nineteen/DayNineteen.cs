@@ -1,4 +1,5 @@
 ﻿using AdventOfCode2022.CSharp.Utility;
+using System.Text.RegularExpressions;
 
 namespace AdventOfCode2022.CSharp.Nineteen;
 
@@ -16,12 +17,11 @@ public class DayNineteen : IAdventProblemSet
         return 19;
     }
 
-    // TODO: Could not get either Part A or Part B
     /// <inheritdoc />
     public string PartA()
     {
         string filePath = @"Nineteen\DayNineteenInput.txt";
-        var sum = SumQualityLevel(filePath);
+        var sum = SumQualityLevelPriorityQueue(filePath, 24);
 
         return sum.ToString();
     }
@@ -30,435 +30,222 @@ public class DayNineteen : IAdventProblemSet
     public string PartB()
     {
         string filePath = @"Nineteen\DayNineteenInput.txt";
-        //var count = CountOpenSides(filePath);
+        var value = MultiplyMaxGeodesPriorityQueue(filePath, 32);
 
-        return "";
+        return value.ToString();
     }
 
+    // Once again, I struggled with this problem a lot.  I was able to get the sample problem correctly but it took over a minute
+    // and that would not work for the full problem in Part A.  I tried several suggestions on Reddit to trim the branches
+    // of the queue down, but those resulted in the sample problem failing.  I spent a number of hours and got frustrated.
+    // In the end, I ended up using another person's solution:  https://github.com/encse/adventofcode/blob/master/2022/Day19/Solution.cs
     public int SumQualityLevelPriorityQueue(string filePath, int maxTime)
     {
-        var blueprints = FileUtility.ParseFileToList(filePath, line => new Blueprint(line));
-        var qualityLevels = blueprints.Select(b => EvaluateBlueprintPriorityQueue(b, maxTime));
+        var blueprints = Parse(filePath);
+        var qualityLevels = blueprints.Select(b => b.id * MaxGeodes(b, maxTime));
         return qualityLevels.Sum();
     }
 
-    private int EvaluateBlueprintPriorityQueue(Blueprint blueprint, int maxTime)
+    public int MultiplyMaxGeodesPriorityQueue(string filePath, int maxTime)
     {
-        //var maxTime = 24;
-        //var blueprints = FileUtility.ParseFileToList(filePath, line => new Blueprint(line));
-        var seen = new HashSet<string>();
-        var maxGeodes = 0;
-
-        var queue = new PriorityQueue<RobotState, int>();
-
-        var startState = new RobotState(maxTime,
-            new Dictionary<string, int>()
-            {
-                {"Ore", 0},
-                {"Clay", 0},
-                {"Obsidian", 0},
-                {"Geode", 0},
-            },
-            new Dictionary<string, int>()
-            {
-                {"Ore", 1},
-                {"Clay", 0},
-                {"Obsidian", 0},
-                {"Geode", 0},
-            },
-            new Dictionary<string, bool>()
-            {
-                { "Ore", false },
-                { "Clay", false },
-                { "Obsidian", false },
-                { "Geode", false }
-            });
-
-        queue.Enqueue(startState, GetPotentialGeodeCount(startState));
-
-        while (queue.Count > 0)
+        var blueprints = Parse(filePath);
+        var res = 1;
+        foreach (var blueprint in blueprints.Where(bp => bp.id <= 3))
         {
-            var current = queue.Dequeue();
+            var m = MaxGeodes(blueprint, 32);
+            res *= m;
+        }
 
-            // TODO: Sample has break?
-            if (GetPotentialGeodeCount(current) < maxGeodes)
-                continue;
+        return res;
+    }
 
-            if (seen.Contains(current.ToString()))
-                continue;
+    // Priority queue based maximum search with LOTS OF PRUNING
+    private int MaxGeodes(Blueprint blueprint, int timeLimit)
+    {
+        var q = new PriorityQueue<State, int>();
+        var seen = new HashSet<State>();
 
-            seen.Add(current.ToString());
+        enqueue(new State(
+            remainingTime: timeLimit,
+            available: Nothing,
+            producing: Ore,
+            dontBuild: 0
+        ));
 
-            // Out of time, so consider maxGeodes
-            if (current.Time == 0)
+        var max = 0;
+        while (q.Count > 0)
+        {
+            var state = q.Dequeue();
+
+            // Queue is ordered by potentialGeodeCount, there is
+            // no point in investigating the remaining items.
+            if (potentialGeodeCount(state) < max)
             {
-                maxGeodes = maxGeodes < current.Resources["Geode"] ? current.Resources["Geode"] : maxGeodes;
-                continue;
+                break;
             }
-                
-            var buildableRobots = blueprint.CanMake(current.Resources);
 
-            // First - consider current state, in case we can build more robots next turn
-            var currentClone = current.Clone();
-            currentClone.Time--;
-            currentClone.BuildableRobots = buildableRobots.ToList();
-            currentClone.Collect();
-
-            queue.Enqueue(currentClone, GetPotentialGeodeCount(currentClone));
-
-            // Second - consider what robots we can make, skipping any we just built the previous round
-            foreach (var robotName in buildableRobots)
+            if (!seen.Contains(state))
             {
-                if (/*!current.BuildableRobots.Contains(robotName) && */WorthBuildingRobot(robotName, current, blueprint))
-                {
-                    var child = current.Clone();
-                    child.Time--;
-                    child.Collect();
-                    blueprint.Make(robotName, child.Resources);
-                    child.Robots[robotName]++;
+                seen.Add(state);
 
-                    queue.Enqueue(child, GetPotentialGeodeCount(child));
+                if (state.remainingTime == 0)
+                {
+                    // time is off, just update max
+                    max = Math.Max(max, state.available.geode);
+                }
+                else
+                {
+                    // What robots can be created from the available materials?
+                    var buildableRobots = blueprint.robots
+                        .Where(robot => state.available >= robot.cost)
+                        .ToArray();
+
+                    // 1) build one of them right away
+                    foreach (var robot in buildableRobots)
+                    {
+                        if (worthBuilding(state, robot))
+                        {
+                            enqueue(state with
+                            {
+                                remainingTime = state.remainingTime - 1,
+                                available = state.available + state.producing - robot.cost,
+                                producing = state.producing + robot.producing,
+                                dontBuild = 0
+                            });
+                        }
+                    }
+
+                    // 2) or wait until next round for more robot types. Don't postpone
+                    //    building of robots which are already available. This is a very
+                    //    very important prunning step. It's about 25 times faster if we
+                    //    do it this way.
+                    enqueue(
+                        state with
+                        {
+                            remainingTime = state.remainingTime - 1,
+                            available = state.available + state.producing,
+                            dontBuild = buildableRobots.Select(robot => robot.id).Sum(),
+                        }
+                    );
                 }
             }
         }
 
-        return maxGeodes;
-    }
+        return max;
 
-    private int GetPotentialGeodeCount(RobotState state)
-    {
-        // What is the max number of geodes that the state can produce, assuming that in every step a new geode robot
-        // can be built.  This is not true, but gives us a potential priority to assign
-        var currentBuilding = state.Robots["Geode"];
-        var futurePotential = (currentBuilding + currentBuilding + state.Time) * state.Time / 2;
-        var currentHoldings = state.Resources["Geode"];
-        return currentHoldings + futurePotential;
-    }
+        // -------
 
-    // Check to see if we need any more of that resource - i.e. are we already producing the max amount we could spend
-    // of that resource, given we can only make one robot a turn
-    private bool WorthBuildingRobot(string robotName, RobotState state, Blueprint blueprint)
-    {
-        return (state.Robots[robotName] + 1) < blueprint.MaxNeeded[robotName];
-    }
-
-    public int SumQualityLevel(string filePath)
-    {
-        var maxTime = 24;
-        var listQualityLevels = new List<int>();
-        
-        var blueprints = FileUtility.ParseFileToList(filePath, line => new Blueprint(line));
-
-        foreach (var blueprint in blueprints)
+        // Upper limit for the maximum geodes we reach when starting from this state.
+        // Let's be optimistic and suppose that in each step we will be able to build
+        // a new geode robot...
+        int potentialGeodeCount(State state)
         {
-            var startState = new RobotState(1,
-                new Dictionary<string, int>()
-                {
-                    {"Ore", 0},
-                    {"Clay", 0},
-                    {"Obsidian", 0},
-                    {"Geode", 0},
-                },
-                new Dictionary<string, int>()
-                {
-                    {"Ore", 1},
-                    {"Clay", 0},
-                    {"Obsidian", 0},
-                    {"Geode", 0},
-                },
-                new Dictionary<string, bool>()
-                {
-                    { "Ore", false },
-                    { "Clay", false },
-                    { "Obsidian", false },
-                    { "Geode", false }
-                });
+            // sum of [state.producing.geode .. state.producing.geode + state.remainingTime - 1]
+            var future =
+                (2 * state.producing.geode + state.remainingTime - 1) * state.remainingTime / 2;
+            return state.available.geode + future;
+        }
 
-
-            var maxGeode = GetMaxGeodesRecursive(startState, blueprint, maxTime, new Dictionary<string, int>());
-
-            /*
-            var queue = new Queue<RobotState>();
-            queue.Enqueue(startState);
-
-            var seenBefore = new HashSet<string>() { startState.ToString() };
-            var bestByTime = new Dictionary<int, int>();
-
-            int maxGeode = 0;
-
-            while (queue.Any())
+        bool worthBuilding(State state, Robot robot)
+        {
+            // We can explicitly ignore building some robots.
+            // Robot ids are powers of 2 used as flags in the dontBuild integer.
+            if ((state.dontBuild & robot.id) != 0)
             {
-                var current = queue.Dequeue();
-
-                // Exit condition
-                if (current.Time > maxTime)
-                {
-                    if (current.Resources["Geode"] > maxGeode)
-                        maxGeode = current.Resources["Geode"];
-
-                    continue;
-                }
-
-                current.Time++;
-
-                // Add options to queue
-                // Test what we can make, in order of cost descending
-                TryAndEnqueue("Geode", current, queue, blueprint, bestByTime);
-                TryAndEnqueue("Obsidian", current, queue, blueprint, bestByTime);
-                TryAndEnqueue("Clay", current, queue, blueprint, bestByTime);
-                TryAndEnqueue("Ore", current, queue, blueprint, bestByTime);
-
-                // Always add current state, as one option is not to purchase anything
-                current.Collect();
-                
-                //if (seenBefore.Contains(current.ToString()))
-                //    continue;
-
-                if (bestByTime.ContainsKey(current.Time))
-                {
-                    if (bestByTime[current.Time] < current.Resources["Geode"])
-                        continue;
-                }
-                
-                bestByTime[current.Time] = current.Resources["Geode"];
-
-                queue.Enqueue(current);
-            }
-            */
-            listQualityLevels.Add(blueprint.Id * maxGeode);
-        }
-
-        return listQualityLevels.Sum();
-    }
-
-    private int GetMaxGeodesRecursive(RobotState current, Blueprint blueprint, int maxTime, Dictionary<string, int> cache)
-    {
-        if (current.Time > maxTime)
-            return current.Resources["Geode"];
-
-        if (!cache.ContainsKey(current.ToString()))
-        {
-            var futureStates = new List<RobotState>();
-            var currentClone = current.Clone();
-            currentClone.CouldBuildLastRound = current.CouldBuildLastRound;
-            
-            currentClone.Time++;
-
-            // Always build a Geode bot if you can
-            var geodeState = TryMakeNewState("Geode", currentClone, blueprint);
-            if (geodeState != null)
-            {
-                geodeState.CouldBuildLastRound["Geode"] = true;
-                futureStates.Add(geodeState);
-            }
-                
-
-            // For others, skip building them if we already are collecting max resource needed for any of the robots
-            // Because we can only build one robot per turn
-            foreach (var robotName in new[] { "Obsidian", "Clay", "Ore" })
-            {
-                if (currentClone.Robots[robotName] >= blueprint.MaxNeeded[robotName])
-                    continue;
-
-                var newState = TryMakeNewState(robotName, currentClone, blueprint);
-                if (newState != null)
-                {
-                    newState.CouldBuildLastRound[robotName] = true;
-                    futureStates.Add(newState);
-                    //break;
-                }
-            }
-
-            currentClone.Collect();
-            futureStates.Add(currentClone);
-
-            cache[current.ToString()] = futureStates.Max(f => GetMaxGeodesRecursive(f, blueprint, maxTime, cache));
-        }
-
-        return cache[current.ToString()];
-    }
-
-    // Note, mutates the queue
-    private void TryAndEnqueue(string robotName, RobotState current, Queue<RobotState> queue, Blueprint blueprint, Dictionary<int, int> bestByTime)
-    {
-        if (!blueprint.CanMake(robotName, current.Resources))
-            return;
-
-        var newState = current.Clone();
-        blueprint.Make(robotName, newState.Resources);
-        newState.Collect();
-        newState.Robots[robotName]++;
-
-        //if (seenBefore.Contains(newState.ToString()))
-        //    return;
-
-        if (bestByTime.ContainsKey(current.Time))
-        {
-            if (bestByTime[current.Time] <= current.Resources["Geode"])
-                return;
-        }
-        bestByTime[current.Time] = current.Resources["Geode"];
-
-        queue.Enqueue(newState);
-    }
-
-    private RobotState? TryMakeNewState(string robotName, RobotState current, Blueprint blueprint)
-    {
-        if (!blueprint.CanMake(robotName, current.Resources) || current.CouldBuildLastRound[robotName])
-            return null;
-
-        var newState = current.Clone();
-        blueprint.Make(robotName, newState.Resources);
-        newState.Collect();
-        newState.Robots[robotName]++;
-
-        return newState;
-    }
-}
-
-public class RobotState
-{
-    public RobotState(int time, Dictionary<string, int> resources, Dictionary<string, int> robots, Dictionary<string, bool> couldBuildLastRound)
-    {
-        Time = time;
-        Resources = resources;
-        Robots = robots;
-        // TODO: may be able to removed
-        CouldBuildLastRound = couldBuildLastRound;
-
-        BuildableRobots = new List<string>();
-    }
-    
-    public Dictionary<string, int> Resources { get; set; }
-
-    public Dictionary<string, int> Robots { get; set; }
-
-    public Dictionary<string, bool> CouldBuildLastRound {get; set; }
-
-    public List<string> BuildableRobots { get; set; }
-
-    public int Time { get; set; }
-
-    public RobotState Clone()
-    {
-        // Assume could build none, so forces to be set
-        var couldBuildPrevious = new Dictionary<string, bool>()
-        {
-            { "Ore", false },
-            { "Clay", false },
-            { "Obsidian", false },
-            { "Geode", false }
-        };
-        return new RobotState(Time, new Dictionary<string, int>(Resources.ToList()), new Dictionary<string, int>(Robots.ToList()), couldBuildPrevious);
-    }
-
-    public void Collect()
-    {
-        foreach (var robot in Robots)
-        {
-            Resources[robot.Key] += robot.Value;
-        }
-    }
-
-    public override string ToString()
-    {
-        // Used to see if we have gotten this state before, so exclude time
-        var res = string.Join(",", Resources.OrderBy(i => i.Key).Select(i => i.Value));
-        var rob = string.Join(",", Robots.OrderBy(i => i.Key).Select(i => i.Value));
-        return $"{Time}|{res}|{rob}";
-    }
-}
-
-public class Blueprint
-{
-    // Ex: Blueprint 1: Each ore robot costs 3 ore. Each clay robot costs 3 ore. Each obsidian robot costs 3 ore and 19 clay. Each geode robot costs 3 ore and 17 obsidian.
-    public Blueprint(string input)
-    {
-        var splitColon = input.Split(':');
-        Id = int.Parse(splitColon[0].Split(' ')[1]);
-
-        Costs = new Dictionary<string, Dictionary<string, int>>();
-
-        var splitPeriod = splitColon[1].Split('.', StringSplitOptions.TrimEntries);
-        // Ore
-        var splitOre = splitPeriod[0].Split(' ');
-        Costs.Add("Ore", new Dictionary<string, int>() {{"Ore", int.Parse(splitOre[4])}});
-
-        // Clay
-        var splitClay = splitPeriod[1].Split(' ');
-        Costs.Add("Clay", new Dictionary<string, int>() {{"Ore", int.Parse(splitClay[4])}});
-
-        // Obsidian
-        var splitObsidian = splitPeriod[2].Split(' ');
-        Costs.Add("Obsidian", new Dictionary<string, int>()
-        {
-            {"Ore", int.Parse(splitObsidian[4])},
-            {"Clay", int.Parse(splitObsidian[7])}
-        });
-
-        // Geode
-        var splitGeode = splitPeriod[3].Split(' ');
-        Costs.Add("Geode", new Dictionary<string, int>()
-        {
-            {"Ore", int.Parse(splitGeode[4])},
-            {"Obsidian", int.Parse(splitGeode[7])}
-        });
-
-        MaxNeeded = new Dictionary<string, int>();
-        
-        // Need as many as we can get of Geode robots
-        MaxNeeded.Add("Geode", int.MaxValue);
-
-        foreach (var robotName in new[] { "Obsidian", "Clay", "Ore" })
-        {
-            var maxNeeded = Costs.Values
-                .SelectMany(v => v)
-                .Where(v => v.Key == robotName)
-                .Select(v => v.Value)
-                .Max();
-            MaxNeeded.Add(robotName, maxNeeded);
-        }
-    }
-    
-    public int Id { get; }
-    
-    public Dictionary<string, Dictionary<string, int>> Costs { get; }
-
-    public Dictionary<string, int> MaxNeeded { get; }
-
-    public List<string> CanMake(Dictionary<string, int> resources)
-    {
-        var makeable = new List<string>();
-        foreach (var robotName in new[] { "Obsidian", "Clay", "Ore" })
-        {
-            if (CanMake(robotName, resources))
-                makeable.Add(robotName);
-        }
-
-        return makeable;
-    }
-
-    public bool CanMake(string robotName, Dictionary<string, int> resources)
-    {
-        foreach (var cost in Costs[robotName])
-        {
-            if (resources[cost.Key] < cost.Value)
                 return false;
+            }
+
+            // Our factory can build just a single robot in a round. This gives as
+            // a prunning condition. Producing more material in a round that we can
+            // spend on building a new robot is worthless.
+            return state.producing + robot.producing <= blueprint.maxCost;
         }
 
-        return true;
+        // Just add an item to the search queue, use -potentialGeodeCount as priority
+        void enqueue(State state)
+        {
+            q.Enqueue(state, -potentialGeodeCount(state));
+        }
     }
 
-    // Note, mutates resources
-    public void Make(string robotName, Dictionary<string, int> resources)
+    private IEnumerable<Blueprint> Parse(string filePath)
     {
-        foreach (var cost in Costs[robotName])
+        foreach (var line in FileUtility.ParseFileToList(filePath))
         {
-            resources[cost.Key] -= cost.Value;
-
-            if (resources[cost.Key] < 0)
-                throw new ArgumentException($"Resource {cost.Key} less than 0");
+            var numbers = Regex.Matches(line, @"(\d+)").Select(x => int.Parse(x.Value)).ToArray();
+            yield return new Blueprint(
+                id: numbers[0],
+                new Robot(id: 1, producing: Ore, cost: numbers[1] * Ore),
+                new Robot(id: 2, producing: Clay, cost: numbers[2] * Ore),
+                new Robot(id: 4, producing: Obsidian, cost: numbers[3] * Ore + numbers[4] * Clay),
+                new Robot(id: 8, producing: Geode, cost: numbers[5] * Ore + numbers[6] * Obsidian)
+            );
         }
+    }
+
+    private static Material Nothing = new Material(0, 0, 0, 0);
+    private static Material Ore = new Material(1, 0, 0, 0);
+    private static Material Clay = new Material(0, 1, 0, 0);
+    private static Material Obsidian = new Material(0, 0, 1, 0);
+    private static Material Geode = new Material(0, 0, 0, 1);
+
+    record Material(int ore, int clay, int obsidian, int geode)
+    {
+        public static Material operator *(int m, Material a)
+        {
+            return new Material(m * a.ore, m * a.clay, m * a.obsidian, m * a.geode);
+        }
+
+        public static Material operator +(Material a, Material b)
+        {
+            return new Material(
+                a.ore + b.ore,
+                a.clay + b.clay,
+                a.obsidian + b.obsidian,
+                a.geode + b.geode
+            );
+        }
+
+        public static Material operator -(Material a, Material b)
+        {
+            return new Material(
+                a.ore - b.ore,
+                a.clay - b.clay,
+                a.obsidian - b.obsidian,
+                a.geode - b.geode
+            );
+        }
+
+        public static bool operator <=(Material a, Material b)
+        {
+            return
+                a.ore <= b.ore &&
+                a.clay <= b.clay &&
+                a.obsidian <= b.obsidian &&
+                a.geode <= b.geode;
+        }
+
+        public static bool operator >=(Material a, Material b)
+        {
+            return
+                a.ore >= b.ore &&
+                a.clay >= b.clay &&
+                a.obsidian >= b.obsidian &&
+                a.geode >= b.geode;
+        }
+    }
+
+    record Robot(int id, Material cost, Material producing);
+
+    record State(int remainingTime, Material available, Material producing, int dontBuild);
+
+    record Blueprint(int id, params Robot[] robots)
+    {
+        public Material maxCost = new Material(
+            ore: robots.Select(robot => robot.cost.ore).Max(),
+            clay: robots.Select(robot => robot.cost.clay).Max(),
+            obsidian: robots.Select(robot => robot.cost.obsidian).Max(),
+            geode: int.MaxValue
+        );
     }
 }
-

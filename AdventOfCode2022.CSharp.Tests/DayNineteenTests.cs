@@ -4,7 +4,6 @@ namespace AdventOfCode2022.CSharp.Tests;
 
 public class DayNineteenTests
 {
-    // TODO: Return here and evaluate - pruning too much now
     [Fact]
     public void SumQualityLevelPriorityQueue()
     {
@@ -15,14 +14,13 @@ public class DayNineteenTests
         Assert.Equal(33, result);
     }
 
-    // Too low - 1452 - takes 2.9 min to run
     [Fact]
     public void PartA_Actual()
     {
         var sut = new DayNineteen();
         var result = sut.PartA();
 
-        Assert.Equal("-1", result);
+        Assert.Equal("1528", result);
     }
 
     [Fact]
@@ -31,6 +29,6 @@ public class DayNineteenTests
         var sut = new DayNineteen();
         var result = sut.PartB();
 
-        Assert.Equal("-1", result);
+        Assert.Equal("16926", result);
     }
 }
