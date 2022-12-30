@@ -32,6 +32,16 @@ public class DayTwentyTwoTests
     }
 
     [Fact]
+    public void GetPasswordForCube()
+    {
+        string filePath = @"TwentyTwo\DayTwentyTwoTestInputA.txt";
+        var sut = new DayTwentyTwo();
+        var result = sut.GetPasswordForCube(filePath, new TestEdgeMapping());
+
+        Assert.Equal(5031, result);
+    }
+
+    [Fact]
     public void PartA_Actual()
     {
         var sut = new DayTwentyTwo();
@@ -46,6 +56,6 @@ public class DayTwentyTwoTests
         var sut = new DayTwentyTwo();
         var result = sut.PartB();
 
-        Assert.Equal("-1", result);
+        Assert.Equal("15426", result);
     }
 }
